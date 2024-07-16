@@ -7,7 +7,7 @@ using RoR2.Skills;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-namespace CustomSkillsTutorial
+namespace TrovianSkills
 {
     [BepInDependency(R2API.ContentManagement.R2APIContentManager.PluginGUID)]
     [BepInDependency(LanguageAPI.PluginGUID)]
@@ -24,18 +24,17 @@ namespace CustomSkillsTutorial
             // If you would like to load a different survivor, you can find the key for their Body prefab at the following link
             // https://xiaoxiao921.github.io/GithubActionCacheTest/assetPathsDump.html
             GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
-
             // We use LanguageAPI to add strings to the game, in the form of tokens
             // Please note that it is instead recommended that you use a language file.
             // More info in https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
             LanguageAPI.Add("COMMANDO_SECONDARY_CHARGEDSHOT_NAME", "Charged Shot");
-            LanguageAPI.Add("COMMANDO_SECONDARY_CHARGEDSHOT_DESCRIPTION", $"Fire an overcharge blast for <style=cIsDamage>700% damage</style>.");
+            LanguageAPI.Add("COMMANDO_SECONDARY_CHARGEDSHOT_DESCRIPTION", $"Fire a single charged shot for <style=cIsDamage>700% damage</style>.");
 
             // Now we must create a SkillDef
             SkillDef mySkillDef = ScriptableObject.CreateInstance<SkillDef>();
 
             //Check step 2 for the code of the CustomSkillsTutorial.MyEntityStates.SimpleBulletAttack class
-            mySkillDef.activationState = new SerializableEntityStateType(typeof(CustomSkillsTutorial.MyEntityStates.Blast));
+            mySkillDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Blast));
             mySkillDef.activationStateMachineName = "Weapon";
             mySkillDef.baseMaxStock = 1;
             mySkillDef.baseRechargeInterval = 5f;
@@ -78,8 +77,8 @@ namespace CustomSkillsTutorial
             LanguageAPI.Add("COMMANDO_UTILITY_JUMP_DESCRIPTION", $"Fly into the sky, dealing <style=cIsDamage>300% damage</style> where you stand.");
             SkillDef jumpUpDef = ScriptableObject.CreateInstance<SkillDef>();
 
-            jumpUpDef.activationState = new SerializableEntityStateType(typeof(CustomSkillsTutorial.MyEntityStates.BlastUp));
-            //jumpUpDef.activationStateMachineName = "Weapon";
+            jumpUpDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.BlastUp));
+            jumpUpDef.activationStateMachineName = "Weapon";
             jumpUpDef.baseMaxStock = 1;
             jumpUpDef.baseRechargeInterval = 3f;
             jumpUpDef.beginSkillCooldownOnSkillEnd = true;
@@ -115,6 +114,79 @@ namespace CustomSkillsTutorial
                 unlockableName = "",
                 viewableNode = new ViewablesCatalog.Node(jumpUpDef.skillNameToken, false, null)
             };
+
+            //GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
+            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_NAME", "Overcharged");
+            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"For 5 seconds, all attacks are overcharge shots.");
+            SkillDef overchargeDef = ScriptableObject.CreateInstance<SkillDef>();
+
+            overchargeDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Overcharge));
+            overchargeDef.activationStateMachineName = "Weapon";
+            overchargeDef.baseMaxStock = 1;
+            overchargeDef.baseRechargeInterval = 15f;
+            overchargeDef.beginSkillCooldownOnSkillEnd = false;
+            overchargeDef.canceledFromSprinting = false;
+            overchargeDef.cancelSprintingOnActivation = false;
+            overchargeDef.fullRestockOnAssign = true;
+            overchargeDef.interruptPriority = InterruptPriority.Skill;
+            overchargeDef.isCombatSkill = false;
+            overchargeDef.mustKeyPress = true;
+            overchargeDef.rechargeStock = 1;
+            overchargeDef.requiredStock = 1;
+            overchargeDef.stockToConsume = 1;
+            // For the skill icon, you will have to load a Sprite from your own AssetBundle
+            overchargeDef.icon = null;
+            overchargeDef.skillDescriptionToken = "COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION";
+            overchargeDef.skillName = "COMMANDO_SPECIAL_OVERCHARGED_NAME";
+            overchargeDef.skillNameToken = "COMMANDO_SPECIAL_OVERCHARGED_NAME";
+
+            // This adds our skilldef. If you don't do this, the skill will not work.
+            ContentAddition.AddSkillDef(overchargeDef);
+
+            // Now we add our skill to one of the survivor's skill families
+            // You can change component.primary to component.secondary, component.utility and component.special
+            skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
+            skillFamily = skillLocator.special.skillFamily;
+
+            // If this is an alternate skill, use this code.
+            // Here, we add our skill as a variant to the existing Skill Family.
+            Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
+            skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
+            {
+                skillDef = overchargeDef,
+                unlockableName = "",
+                viewableNode = new ViewablesCatalog.Node(overchargeDef.skillNameToken, false, null)
+            };
+
+
+            /*SkillDef primaryOverrideSkillDef = ScriptableObject.CreateInstance<SkillDef>();
+            primaryOverrideSkillDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.OverrideM1));
+            primaryOverrideSkillDef.activationStateMachineName = "Weapon";
+            primaryOverrideSkillDef.baseMaxStock = 1;
+            primaryOverrideSkillDef.baseRechargeInterval = 0f;
+            primaryOverrideSkillDef.beginSkillCooldownOnSkillEnd = true;
+            primaryOverrideSkillDef.canceledFromSprinting = false;
+            primaryOverrideSkillDef.cancelSprintingOnActivation = true;
+            primaryOverrideSkillDef.fullRestockOnAssign = true;
+            primaryOverrideSkillDef.interruptPriority = InterruptPriority.Any;
+            primaryOverrideSkillDef.isCombatSkill = true;
+            primaryOverrideSkillDef.mustKeyPress = false;
+            primaryOverrideSkillDef.rechargeStock = 1;
+            primaryOverrideSkillDef.requiredStock = 1;
+            primaryOverrideSkillDef.stockToConsume = 1;
+            ContentAddition.AddSkillDef(primaryOverrideSkillDef);
+            LanguageAPI.Add("COMMANDO_PRIMARY_OVERCHARGED_NAME", "Overcharged");
+            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"For 5 seconds, all attacks are overcharge shots.");
+            skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
+            skillFamily = skillLocator.primary.skillFamily;
+            Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
+            skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
+            {
+                skillDef = primaryOverrideSkillDef,
+                unlockableName = "",
+
+            };*/
+
         }
     }
 }
