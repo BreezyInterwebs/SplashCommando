@@ -1,9 +1,12 @@
 using System;
 using BepInEx;
 using EntityStates;
+using JetBrains.Annotations;
 using R2API;
+using R2API.Utils;
 using RoR2;
 using RoR2.Skills;
+using TrovianSkills.EntityStates;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -128,7 +131,7 @@ namespace TrovianSkills
             overchargeDef.canceledFromSprinting = false;
             overchargeDef.cancelSprintingOnActivation = false;
             overchargeDef.fullRestockOnAssign = true;
-            overchargeDef.interruptPriority = InterruptPriority.Skill;
+            overchargeDef.interruptPriority = InterruptPriority.PrioritySkill;
             overchargeDef.isCombatSkill = false;
             overchargeDef.mustKeyPress = true;
             overchargeDef.rechargeStock = 1;
@@ -159,7 +162,7 @@ namespace TrovianSkills
             };
 
 
-            /*SkillDef primaryOverrideSkillDef = ScriptableObject.CreateInstance<SkillDef>();
+            SkillDef primaryOverrideSkillDef = ScriptableObject.CreateInstance<SkillDef>();
             primaryOverrideSkillDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.OverrideM1));
             primaryOverrideSkillDef.activationStateMachineName = "Weapon";
             primaryOverrideSkillDef.baseMaxStock = 1;
@@ -185,8 +188,57 @@ namespace TrovianSkills
                 skillDef = primaryOverrideSkillDef,
                 unlockableName = "",
 
-            };*/
+            };
 
+            LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_NAME", "Velocity Leecher");
+            LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_DESCRIPTION", $"Slow your descent upon damaging an enemy.");
+            PassiveItemSkillDef vleechDef = ScriptableObject.CreateInstance<PassiveItemSkillDef>();
+
+            //vleechDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Vleech));
+            //vleechDef.activationStateMachineName = "Body";
+            vleechDef.passiveItem = ExamplePlugin.myItemDef;
+            vleechDef.baseMaxStock = 1;
+            vleechDef.baseRechargeInterval = 0f;
+            vleechDef.beginSkillCooldownOnSkillEnd = true;
+            vleechDef.canceledFromSprinting = false;
+            vleechDef.cancelSprintingOnActivation = false;
+            vleechDef.fullRestockOnAssign = true;
+            vleechDef.interruptPriority = InterruptPriority.Any;
+            vleechDef.isCombatSkill = false;
+            vleechDef.mustKeyPress = false;
+            vleechDef.rechargeStock = 1;
+            vleechDef.requiredStock = 1;
+            vleechDef.stockToConsume = 1;
+            // For the skill icon, you will have to load a Sprite from your own AssetBundle
+            vleechDef.icon = null;
+            vleechDef.skillDescriptionToken = "COMMANDO_PASSIVE_LEECH_DESCRIPTION";
+            vleechDef.skillName = "COMMANDO_PASSIVE_LEECH_NAME";
+            vleechDef.skillNameToken = "COMMANDO_PASSIVE_LEECH_NAME";
+
+            // This adds our skilldef. If you don't do this, the skill will not work.
+            ContentAddition.AddSkillDef(vleechDef);
+
+            //First we add a new GenericSkill component to the survivor's body prefab
+            GenericSkill uniqueSkill = commandoBodyPrefab.AddComponent<GenericSkill>();
+            uniqueSkill.skillName = commandoBodyPrefab.name + "UniqueSkill";
+
+            //Then we create a new skill family
+            SkillFamily uniqueFamily = ScriptableObject.CreateInstance<SkillFamily>();
+            (uniqueFamily as ScriptableObject).name = commandoBodyPrefab.name + "UniqueFamily";
+            uniqueSkill.SetFieldValue("_skillFamily", uniqueFamily);
+            uniqueFamily.variants = new SkillFamily.Variant[0];
+
+            //Now we add our skill to the new skill family's variants, same as before
+            Array.Resize(ref uniqueFamily.variants, uniqueFamily.variants.Length + 1);
+            uniqueFamily.variants[uniqueFamily.variants.Length - 1] = new SkillFamily.Variant
+            {
+                skillDef = vleechDef,
+                unlockableName = "",
+                viewableNode = new ViewablesCatalog.Node(vleechDef.skillNameToken, false, null)
+            };
+
+            //Finally we add our new SkillFamily using the ContentAddition API
+            ContentAddition.AddSkillFamily(uniqueFamily);
         }
     }
 }
