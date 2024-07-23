@@ -1,7 +1,6 @@
 using System;
 using BepInEx;
 using EntityStates;
-using JetBrains.Annotations;
 using R2API;
 using R2API.Utils;
 using RoR2;
@@ -21,65 +20,57 @@ namespace TrovianSkills
         "1.0.0")]
     public class CustomSkillTutorial : BaseUnityPlugin
     {
+        private AssetBundleCreateRequest trovianAssets;
+        private Sprite chargedIcon;
+        private Sprite jumpIcon;
+        private Sprite overchargeIcon;
+        private Sprite stallIcon;
         public void Awake()
         {
-            // First we must load our survivor's Body prefab. For this tutorial, we are making a skill for Commando
-            // If you would like to load a different survivor, you can find the key for their Body prefab at the following link
-            // https://xiaoxiao921.github.io/GithubActionCacheTest/assetPathsDump.html
+            this.trovianAssets = AssetBundle.LoadFromFileAsync(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(this.Info.Location),"AssetBundles", "trovianskills"));
+            this.chargedIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("blast").asset as Sprite;
+            this.jumpIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("jump").asset as Sprite;
+            this.overchargeIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("overcharge").asset as Sprite;
+            this.stallIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("stall").asset as Sprite;
+
+
             GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
-            // We use LanguageAPI to add strings to the game, in the form of tokens
-            // Please note that it is instead recommended that you use a language file.
-            // More info in https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
             LanguageAPI.Add("COMMANDO_SECONDARY_CHARGEDSHOT_NAME", "Charged Shot");
             LanguageAPI.Add("COMMANDO_SECONDARY_CHARGEDSHOT_DESCRIPTION", $"Fire a single charged shot for <style=cIsDamage>700% damage</style>.");
-
-            // Now we must create a SkillDef
-            SkillDef mySkillDef = ScriptableObject.CreateInstance<SkillDef>();
-
-            //Check step 2 for the code of the CustomSkillsTutorial.MyEntityStates.SimpleBulletAttack class
-            mySkillDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Blast));
-            mySkillDef.activationStateMachineName = "Weapon";
-            mySkillDef.baseMaxStock = 1;
-            mySkillDef.baseRechargeInterval = 5f;
-            mySkillDef.beginSkillCooldownOnSkillEnd = true;
-            mySkillDef.canceledFromSprinting = false;
-            mySkillDef.cancelSprintingOnActivation = false;
-            mySkillDef.fullRestockOnAssign = true;
-            mySkillDef.interruptPriority = InterruptPriority.Skill;
-            mySkillDef.isCombatSkill = true;
-            mySkillDef.mustKeyPress = true;
-            mySkillDef.rechargeStock = 1;
-            mySkillDef.requiredStock = 1;
-            mySkillDef.stockToConsume = 1;
-            // For the skill icon, you will have to load a Sprite from your own AssetBundle
-            mySkillDef.icon = null;
-            mySkillDef.skillDescriptionToken = "COMMANDO_SECONDARY_CHARGEDSHOT_DESCRIPTION";
-            mySkillDef.skillName = "COMMANDO_SECONDARY_CHARGEDSHOT_NAME";
-            mySkillDef.skillNameToken = "COMMANDO_SECONDARY_CHARGEDSHOT_NAME";
-
-            // This adds our skilldef. If you don't do this, the skill will not work.
-            ContentAddition.AddSkillDef(mySkillDef);
-
-            // Now we add our skill to one of the survivor's skill families
-            // You can change component.primary to component.secondary, component.utility and component.special
+            SkillDef chargedShotDef = ScriptableObject.CreateInstance<SkillDef>();
+            chargedShotDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Blast));
+            chargedShotDef.activationStateMachineName = "Weapon";
+            chargedShotDef.baseMaxStock = 1;
+            chargedShotDef.baseRechargeInterval = 5f;
+            chargedShotDef.beginSkillCooldownOnSkillEnd = true;
+            chargedShotDef.canceledFromSprinting = false;
+            chargedShotDef.cancelSprintingOnActivation = true;
+            chargedShotDef.fullRestockOnAssign = true;
+            chargedShotDef.interruptPriority = InterruptPriority.Skill;
+            chargedShotDef.isCombatSkill = true;
+            chargedShotDef.mustKeyPress = true;
+            chargedShotDef.rechargeStock = 1;
+            chargedShotDef.requiredStock = 1;
+            chargedShotDef.stockToConsume = 1;
+            chargedShotDef.icon = chargedIcon;
+            chargedShotDef.skillDescriptionToken = "COMMANDO_SECONDARY_CHARGEDSHOT_DESCRIPTION";
+            chargedShotDef.skillName = "COMMANDO_SECONDARY_CHARGEDSHOT_NAME";
+            chargedShotDef.skillNameToken = "COMMANDO_SECONDARY_CHARGEDSHOT_NAME";
+            ContentAddition.AddSkillDef(chargedShotDef);
             SkillLocator skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
             SkillFamily skillFamily = skillLocator.secondary.skillFamily;
-
-            // If this is an alternate skill, use this code.
-            // Here, we add our skill as a variant to the existing Skill Family.
             Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
             skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
             {
-                skillDef = mySkillDef,
+                skillDef = chargedShotDef,
                 unlockableName = "",
-                viewableNode = new ViewablesCatalog.Node(mySkillDef.skillNameToken, false, null)
+                viewableNode = new ViewablesCatalog.Node(chargedShotDef.skillNameToken, false, null)
             };
 
-            //GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
-            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_NAME", "Blast Jump");
-            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_DESCRIPTION", $"Fly into the sky, dealing <style=cIsDamage>300% damage</style> where you stand.");
-            SkillDef jumpUpDef = ScriptableObject.CreateInstance<SkillDef>();
 
+            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_NAME", "Blast Jump");
+            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_DESCRIPTION", $"Fly into the sky.");
+            SkillDef jumpUpDef = ScriptableObject.CreateInstance<SkillDef>();
             jumpUpDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.BlastUp));
             jumpUpDef.activationStateMachineName = "Weapon";
             jumpUpDef.baseMaxStock = 1;
@@ -88,28 +79,19 @@ namespace TrovianSkills
             jumpUpDef.canceledFromSprinting = false;
             jumpUpDef.cancelSprintingOnActivation = false;
             jumpUpDef.fullRestockOnAssign = true;
-            jumpUpDef.interruptPriority = InterruptPriority.Skill;
+            jumpUpDef.interruptPriority = InterruptPriority.PrioritySkill;
             jumpUpDef.isCombatSkill = false;
             jumpUpDef.mustKeyPress = true;
             jumpUpDef.rechargeStock = 1;
             jumpUpDef.requiredStock = 1;
             jumpUpDef.stockToConsume = 1;
-            // For the skill icon, you will have to load a Sprite from your own AssetBundle
-            jumpUpDef.icon = null;
+            jumpUpDef.icon = jumpIcon;
             jumpUpDef.skillDescriptionToken = "COMMANDO_UTILITY_JUMP_DESCRIPTION";
             jumpUpDef.skillName = "COMMANDO_UTILITY_JUMP_NAME";
             jumpUpDef.skillNameToken = "COMMANDO_UTILITY_JUMP_NAME";
-
-            // This adds our skilldef. If you don't do this, the skill will not work.
             ContentAddition.AddSkillDef(jumpUpDef);
-
-            // Now we add our skill to one of the survivor's skill families
-            // You can change component.primary to component.secondary, component.utility and component.special
             skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
             skillFamily = skillLocator.utility.skillFamily;
-
-            // If this is an alternate skill, use this code.
-            // Here, we add our skill as a variant to the existing Skill Family.
             Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
             skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
             {
@@ -118,41 +100,31 @@ namespace TrovianSkills
                 viewableNode = new ViewablesCatalog.Node(jumpUpDef.skillNameToken, false, null)
             };
 
-            //GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
+
             LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_NAME", "Overcharged");
             LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"For 5 seconds, all attacks are overcharge shots.");
             SkillDef overchargeDef = ScriptableObject.CreateInstance<SkillDef>();
-
             overchargeDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Overcharge));
             overchargeDef.activationStateMachineName = "Weapon";
             overchargeDef.baseMaxStock = 1;
             overchargeDef.baseRechargeInterval = 15f;
-            overchargeDef.beginSkillCooldownOnSkillEnd = false;
+            overchargeDef.beginSkillCooldownOnSkillEnd = true;
             overchargeDef.canceledFromSprinting = false;
-            overchargeDef.cancelSprintingOnActivation = false;
+            overchargeDef.cancelSprintingOnActivation = true;
             overchargeDef.fullRestockOnAssign = true;
-            overchargeDef.interruptPriority = InterruptPriority.PrioritySkill;
-            overchargeDef.isCombatSkill = false;
-            overchargeDef.mustKeyPress = true;
+            overchargeDef.interruptPriority = InterruptPriority.Skill;
+            overchargeDef.isCombatSkill = true;
+            overchargeDef.mustKeyPress = false;
             overchargeDef.rechargeStock = 1;
             overchargeDef.requiredStock = 1;
             overchargeDef.stockToConsume = 1;
-            // For the skill icon, you will have to load a Sprite from your own AssetBundle
-            overchargeDef.icon = null;
+            overchargeDef.icon = overchargeIcon;
             overchargeDef.skillDescriptionToken = "COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION";
             overchargeDef.skillName = "COMMANDO_SPECIAL_OVERCHARGED_NAME";
             overchargeDef.skillNameToken = "COMMANDO_SPECIAL_OVERCHARGED_NAME";
-
-            // This adds our skilldef. If you don't do this, the skill will not work.
             ContentAddition.AddSkillDef(overchargeDef);
-
-            // Now we add our skill to one of the survivor's skill families
-            // You can change component.primary to component.secondary, component.utility and component.special
             skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
             skillFamily = skillLocator.special.skillFamily;
-
-            // If this is an alternate skill, use this code.
-            // Here, we add our skill as a variant to the existing Skill Family.
             Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
             skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
             {
@@ -162,40 +134,9 @@ namespace TrovianSkills
             };
 
 
-            SkillDef primaryOverrideSkillDef = ScriptableObject.CreateInstance<SkillDef>();
-            primaryOverrideSkillDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.OverrideM1));
-            primaryOverrideSkillDef.activationStateMachineName = "Weapon";
-            primaryOverrideSkillDef.baseMaxStock = 1;
-            primaryOverrideSkillDef.baseRechargeInterval = 0f;
-            primaryOverrideSkillDef.beginSkillCooldownOnSkillEnd = true;
-            primaryOverrideSkillDef.canceledFromSprinting = false;
-            primaryOverrideSkillDef.cancelSprintingOnActivation = true;
-            primaryOverrideSkillDef.fullRestockOnAssign = true;
-            primaryOverrideSkillDef.interruptPriority = InterruptPriority.Any;
-            primaryOverrideSkillDef.isCombatSkill = true;
-            primaryOverrideSkillDef.mustKeyPress = false;
-            primaryOverrideSkillDef.rechargeStock = 1;
-            primaryOverrideSkillDef.requiredStock = 1;
-            primaryOverrideSkillDef.stockToConsume = 1;
-            ContentAddition.AddSkillDef(primaryOverrideSkillDef);
-            LanguageAPI.Add("COMMANDO_PRIMARY_OVERCHARGED_NAME", "Overcharged");
-            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"For 5 seconds, all attacks are overcharge shots.");
-            skillLocator = commandoBodyPrefab.GetComponent<SkillLocator>();
-            skillFamily = skillLocator.primary.skillFamily;
-            Array.Resize(ref skillFamily.variants, skillFamily.variants.Length + 1);
-            skillFamily.variants[skillFamily.variants.Length - 1] = new SkillFamily.Variant
-            {
-                skillDef = primaryOverrideSkillDef,
-                unlockableName = "",
-
-            };
-
             LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_NAME", "Velocity Leecher");
             LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_DESCRIPTION", $"Slow your descent upon damaging an enemy.");
             PassiveItemSkillDef vleechDef = ScriptableObject.CreateInstance<PassiveItemSkillDef>();
-
-            //vleechDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Vleech));
-            //vleechDef.activationStateMachineName = "Body";
             vleechDef.passiveItem = ExamplePlugin.myItemDef;
             vleechDef.baseMaxStock = 1;
             vleechDef.baseRechargeInterval = 0f;
@@ -209,26 +150,17 @@ namespace TrovianSkills
             vleechDef.rechargeStock = 1;
             vleechDef.requiredStock = 1;
             vleechDef.stockToConsume = 1;
-            // For the skill icon, you will have to load a Sprite from your own AssetBundle
-            vleechDef.icon = null;
+            vleechDef.icon = stallIcon;
             vleechDef.skillDescriptionToken = "COMMANDO_PASSIVE_LEECH_DESCRIPTION";
             vleechDef.skillName = "COMMANDO_PASSIVE_LEECH_NAME";
             vleechDef.skillNameToken = "COMMANDO_PASSIVE_LEECH_NAME";
-
-            // This adds our skilldef. If you don't do this, the skill will not work.
             ContentAddition.AddSkillDef(vleechDef);
-
-            //First we add a new GenericSkill component to the survivor's body prefab
             GenericSkill uniqueSkill = commandoBodyPrefab.AddComponent<GenericSkill>();
             uniqueSkill.skillName = commandoBodyPrefab.name + "UniqueSkill";
-
-            //Then we create a new skill family
             SkillFamily uniqueFamily = ScriptableObject.CreateInstance<SkillFamily>();
             (uniqueFamily as ScriptableObject).name = commandoBodyPrefab.name + "UniqueFamily";
             uniqueSkill.SetFieldValue("_skillFamily", uniqueFamily);
             uniqueFamily.variants = new SkillFamily.Variant[0];
-
-            //Now we add our skill to the new skill family's variants, same as before
             Array.Resize(ref uniqueFamily.variants, uniqueFamily.variants.Length + 1);
             uniqueFamily.variants[uniqueFamily.variants.Length - 1] = new SkillFamily.Variant
             {
@@ -236,8 +168,6 @@ namespace TrovianSkills
                 unlockableName = "",
                 viewableNode = new ViewablesCatalog.Node(vleechDef.skillNameToken, false, null)
             };
-
-            //Finally we add our new SkillFamily using the ContentAddition API
             ContentAddition.AddSkillFamily(uniqueFamily);
         }
     }
