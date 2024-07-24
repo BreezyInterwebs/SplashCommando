@@ -109,7 +109,7 @@ namespace TrovianSkills
             overchargeDef.activationStateMachineName = "Weapon";
             overchargeDef.baseMaxStock = 1;
             overchargeDef.baseRechargeInterval = 15f;
-            overchargeDef.beginSkillCooldownOnSkillEnd = true;
+            overchargeDef.beginSkillCooldownOnSkillEnd = false;
             overchargeDef.canceledFromSprinting = false;
             overchargeDef.cancelSprintingOnActivation = true;
             overchargeDef.fullRestockOnAssign = true;
@@ -216,7 +216,7 @@ namespace TrovianSkills
             myItemDef.pickupToken = "VelocityLeecher";
             myItemDef.descriptionToken = "VelocityLeecher";
             myItemDef.loreToken = "VelocityLeecher";
-            myItemDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>("RoR2/Base/Common/NoTierDef.asset").WaitForCompletion();
+            myItemDef.deprecatedTier = ItemTier.NoTier;
 #pragma warning restore Publicizer001
             myItemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/Base/Common/MiscIcons/texMysteryIcon.png").WaitForCompletion();
             myItemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Mystery/PickupMystery.prefab").WaitForCompletion();

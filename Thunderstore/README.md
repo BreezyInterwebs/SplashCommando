@@ -7,7 +7,6 @@ And is probably coded terribly.
 
 And is probably a little too powerful.
 
-
 ## Skills
 
 ### Secondary: Charge Shot
