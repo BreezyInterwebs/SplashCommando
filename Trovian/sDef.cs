@@ -5,7 +5,6 @@ using R2API;
 using R2API.Utils;
 using RoR2;
 using RoR2.Skills;
-using TrovianSkills.EntityStates;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -15,16 +14,17 @@ namespace TrovianSkills
     [BepInDependency(LanguageAPI.PluginGUID)]
 
     [BepInPlugin(
-        "com.MyName.IHerebyGrantPermissionToDeprecateMyModFromThunderstoreBecauseIHaveNotChangedTheName",
-        "IHerebyGrantPermissionToDeprecateMyModFromThunderstoreBecauseIHaveNotChangedTheName",
+        "com.BreezyInterwebs.TrovianGunslinger",
+        "TrovianGunslinger",
         "1.0.0")]
-    public class CustomSkillTutorial : BaseUnityPlugin
+    public class CustomSkills : BaseUnityPlugin
     {
         private AssetBundleCreateRequest trovianAssets;
         private Sprite chargedIcon;
         private Sprite jumpIcon;
         private Sprite overchargeIcon;
         private Sprite stallIcon;
+        private Sprite noneIcon;
         public void Awake()
         {
             this.trovianAssets = AssetBundle.LoadFromFileAsync(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(this.Info.Location),"AssetBundles", "trovianskills"));
@@ -32,6 +32,7 @@ namespace TrovianSkills
             this.jumpIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("jump").asset as Sprite;
             this.overchargeIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("overcharge").asset as Sprite;
             this.stallIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("stall").asset as Sprite;
+            this.noneIcon = this.trovianAssets.assetBundle.LoadAssetAsync<Sprite>("none").asset as Sprite;
 
 
             GameObject commandoBodyPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Commando/CommandoBody.prefab").WaitForCompletion();
@@ -69,7 +70,7 @@ namespace TrovianSkills
 
 
             LanguageAPI.Add("COMMANDO_UTILITY_JUMP_NAME", "Blast Jump");
-            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_DESCRIPTION", $"Fly into the sky.");
+            LanguageAPI.Add("COMMANDO_UTILITY_JUMP_DESCRIPTION", $"<style=cIsUtility>Fly</style> into the sky.");
             SkillDef jumpUpDef = ScriptableObject.CreateInstance<SkillDef>();
             jumpUpDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.BlastUp));
             jumpUpDef.activationStateMachineName = "Weapon";
@@ -102,7 +103,7 @@ namespace TrovianSkills
 
 
             LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_NAME", "Overcharged");
-            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"For 5 seconds, all attacks are overcharge shots.");
+            LanguageAPI.Add("COMMANDO_SPECIAL_OVERCHARGED_DESCRIPTION", $"Blast a 5 second burst of <style=cIsDamage>charged shots</style>.");
             SkillDef overchargeDef = ScriptableObject.CreateInstance<SkillDef>();
             overchargeDef.activationState = new SerializableEntityStateType(typeof(TrovianSkills.EntityStates.Overcharge));
             overchargeDef.activationStateMachineName = "Weapon";
@@ -133,11 +134,47 @@ namespace TrovianSkills
                 viewableNode = new ViewablesCatalog.Node(overchargeDef.skillNameToken, false, null)
             };
 
+            LanguageAPI.Add("COMMANDO_PASSIVE_NONE_NAME", "No Passive");
+            LanguageAPI.Add("COMMANDO_PASSIVE_NONE_DESCRIPTION", $"Allows you to play vanilla Commando.");
+            PassiveItemSkillDef noneDef = ScriptableObject.CreateInstance<PassiveItemSkillDef>();
+            noneDef.passiveItem = null;
+            noneDef.baseMaxStock = 1;
+            noneDef.baseRechargeInterval = 0f;
+            noneDef.beginSkillCooldownOnSkillEnd = true;
+            noneDef.canceledFromSprinting = false;
+            noneDef.cancelSprintingOnActivation = false;
+            noneDef.fullRestockOnAssign = true;
+            noneDef.interruptPriority = InterruptPriority.Any;
+            noneDef.isCombatSkill = false;
+            noneDef.mustKeyPress = false;
+            noneDef.rechargeStock = 1;
+            noneDef.requiredStock = 1;
+            noneDef.stockToConsume = 1;
+            noneDef.icon = noneIcon;
+            noneDef.skillDescriptionToken = "COMMANDO_PASSIVE_NONE_DESCRIPTION";
+            noneDef.skillName = "COMMANDO_PASSIVE_NONE_NAME";
+            noneDef.skillNameToken = "COMMANDO_PASSIVE_NONE_NAME";
+            ContentAddition.AddSkillDef(noneDef);
+            GenericSkill uniqueSkill = commandoBodyPrefab.AddComponent<GenericSkill>();
+            uniqueSkill.skillName = commandoBodyPrefab.name + "UniqueSkill";
+            SkillFamily uniqueFamily = ScriptableObject.CreateInstance<SkillFamily>();
+            (uniqueFamily as ScriptableObject).name = commandoBodyPrefab.name + "UniqueFamily";
+            uniqueSkill.SetFieldValue("_skillFamily", uniqueFamily);
+            uniqueFamily.variants = new SkillFamily.Variant[0];
+            Array.Resize(ref uniqueFamily.variants, uniqueFamily.variants.Length + 1);
+            uniqueFamily.variants[uniqueFamily.variants.Length - 1] = new SkillFamily.Variant
+            {
+                skillDef = noneDef,
+                unlockableName = "",
+                viewableNode = new ViewablesCatalog.Node(noneDef.skillNameToken, false, null)
+            };
+            ContentAddition.AddSkillFamily(uniqueFamily);
+
 
             LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_NAME", "Velocity Leecher");
-            LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_DESCRIPTION", $"Slow your descent upon damaging an enemy.");
+            LanguageAPI.Add("COMMANDO_PASSIVE_LEECH_DESCRIPTION", $"<style=cIsUtility>Slow your descent</style> upon damaging an enemy.");
             PassiveItemSkillDef vleechDef = ScriptableObject.CreateInstance<PassiveItemSkillDef>();
-            vleechDef.passiveItem = ExamplePlugin.myItemDef;
+            vleechDef.passiveItem = VelocityItem.myItemDef;
             vleechDef.baseMaxStock = 1;
             vleechDef.baseRechargeInterval = 0f;
             vleechDef.beginSkillCooldownOnSkillEnd = true;
@@ -155,12 +192,6 @@ namespace TrovianSkills
             vleechDef.skillName = "COMMANDO_PASSIVE_LEECH_NAME";
             vleechDef.skillNameToken = "COMMANDO_PASSIVE_LEECH_NAME";
             ContentAddition.AddSkillDef(vleechDef);
-            GenericSkill uniqueSkill = commandoBodyPrefab.AddComponent<GenericSkill>();
-            uniqueSkill.skillName = commandoBodyPrefab.name + "UniqueSkill";
-            SkillFamily uniqueFamily = ScriptableObject.CreateInstance<SkillFamily>();
-            (uniqueFamily as ScriptableObject).name = commandoBodyPrefab.name + "UniqueFamily";
-            uniqueSkill.SetFieldValue("_skillFamily", uniqueFamily);
-            uniqueFamily.variants = new SkillFamily.Variant[0];
             Array.Resize(ref uniqueFamily.variants, uniqueFamily.variants.Length + 1);
             uniqueFamily.variants[uniqueFamily.variants.Length - 1] = new SkillFamily.Variant
             {
@@ -168,7 +199,56 @@ namespace TrovianSkills
                 unlockableName = "",
                 viewableNode = new ViewablesCatalog.Node(vleechDef.skillNameToken, false, null)
             };
-            ContentAddition.AddSkillFamily(uniqueFamily);
+        }
+    }
+
+    [BepInDependency(LanguageAPI.PluginGUID)]
+    [BepInDependency(ItemAPI.PluginGUID)]
+    [BepInPlugin("com.BreezyInterwebs.VelocityItem", "VelocityItem", "1.0.0")]
+    public class VelocityItem : BaseUnityPlugin
+    {
+
+        public static ItemDef myItemDef = ScriptableObject.CreateInstance<ItemDef>();
+        public void Awake()
+        {
+            myItemDef.name = "VelocityLeecher";
+            myItemDef.nameToken = "VelocityLeecher";
+            myItemDef.pickupToken = "VelocityLeecher";
+            myItemDef.descriptionToken = "VelocityLeecher";
+            myItemDef.loreToken = "VelocityLeecher";
+            myItemDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>("RoR2/Base/Common/NoTierDef.asset").WaitForCompletion();
+#pragma warning restore Publicizer001
+            myItemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/Base/Common/MiscIcons/texMysteryIcon.png").WaitForCompletion();
+            myItemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Mystery/PickupMystery.prefab").WaitForCompletion();
+            myItemDef.canRemove = false;
+            myItemDef.hidden = true;
+            myItemDef.tags = [ItemTag.WorldUnique, ItemTag.CannotDuplicate];
+            var displayRules = new ItemDisplayRuleDict(null);
+            ItemAPI.Add(new CustomItem(myItemDef, displayRules));
+            GlobalEventManager.onServerDamageDealt += GlobalEventManager_OnHitEnemy;
+        }
+        private void GlobalEventManager_OnHitEnemy(DamageReport report)
+        {
+            if (!report.attacker || !report.attackerBody)
+            {
+                return;
+            }
+            var attackerCharacterBody = report.attackerBody;
+            if (attackerCharacterBody.inventory)
+            {
+                var garbCount = attackerCharacterBody.inventory.GetItemCount(myItemDef.itemIndex);
+                if (garbCount > 0)
+                {
+                    if (attackerCharacterBody.characterMotor.velocity.y < 0)
+                    {
+                        attackerCharacterBody.characterMotor.velocity.y = -0.05f;
+                    }
+                }
+            }
+        }
+        private void Update()
+        {
+            return;
         }
     }
 }

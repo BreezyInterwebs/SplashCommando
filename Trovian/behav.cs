@@ -1,12 +1,9 @@
 ﻿using EntityStates;
 using RoR2;
-using BepInEx;
 using RoR2.Projectile;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using R2API;
 
-[assembly: HG.Reflection.SearchableAttribute.OptIn]
 namespace TrovianSkills.EntityStates
 {
     public class Blast : BaseState
@@ -177,55 +174,6 @@ namespace TrovianSkills.EntityStates
         public override InterruptPriority GetMinimumInterruptPriority()
         {
             return InterruptPriority.PrioritySkill;
-        }
-    }
-
-    [BepInDependency(LanguageAPI.PluginGUID)]
-    [BepInDependency(ItemAPI.PluginGUID)]
-    [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    public class ExamplePlugin : BaseUnityPlugin
-    {
-        public const string PluginGUID = PluginAuthor + "." + PluginName;
-        public const string PluginAuthor = "AuthorName";
-        public const string PluginName = "ExamplePlugin";
-        public const string PluginVersion = "1.0.0";
-
-        public static ItemDef myItemDef = ScriptableObject.CreateInstance<ItemDef>();
-        public void Awake()
-        {
-            myItemDef.name = "VelocityLeecher";
-            myItemDef.nameToken = "EXAMPLE_VLEECH_NAME";
-            myItemDef.pickupToken = "EXAMPLE_VLEECH_PICKUP";
-            myItemDef.descriptionToken = "EXAMPLE_VLEECH_DESC";
-            myItemDef.loreToken = "EXAMPLE_VLEECH_LORE";
-            myItemDef._itemTierDef = Addressables.LoadAssetAsync<ItemTierDef>("RoR2/Base/Common/NoTierDef.asset").WaitForCompletion();
-#pragma warning restore Publicizer001
-            myItemDef.pickupIconSprite = Addressables.LoadAssetAsync<Sprite>("RoR2/Base/Common/MiscIcons/texMysteryIcon.png").WaitForCompletion();
-            myItemDef.pickupModelPrefab = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Mystery/PickupMystery.prefab").WaitForCompletion();
-            myItemDef.canRemove = false;
-            myItemDef.hidden = true;
-            var displayRules = new ItemDisplayRuleDict(null);
-            ItemAPI.Add(new CustomItem(myItemDef, displayRules));
-            GlobalEventManager.onServerDamageDealt += GlobalEventManager_onServerDamageDealt;
-        }
-        private void GlobalEventManager_onServerDamageDealt(DamageReport report)
-        {
-            var attackerCharacterBody = report.attackerBody;
-            if (attackerCharacterBody.inventory)
-            {
-                var garbCount = attackerCharacterBody.inventory.GetItemCount(myItemDef.itemIndex);
-                if (garbCount > 0)
-                {
-                    if (attackerCharacterBody.characterMotor.velocity.y < 0)
-                    {
-                        attackerCharacterBody.characterMotor.velocity.y = -0.05f;
-                    }
-                }
-            }
-        }
-        private void Update()
-        {
-            return;
         }
     }
 }
